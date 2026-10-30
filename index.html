@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Fisga - Pesca Esportiva</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            principal: "#006194",
+            secundaria: "#00687a",
+            sucesso: "#006b2c",
+            fundo: "#faf8ff"
+          },
+          fontFamily: {
+            sans: ["Plus Jakarta Sans", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+  <script src="script.js"></script>
+</head>
+<body class="fundo-pagina fonte-padrao texto-cor-principal antialiased">
+  <div class="app-shell">
+   <header class="cabecalho-fixo">
+    <div class="conteudo-cabecalho">
+      <div class="bloco-logo">
+        <div class="icone-logo">
+          <span class="material-symbols-outlined text-[24px]">phishing</span>
+        </div>
+        <div class="texto-logo">
+          <div class="linha-titulo-logo">
+            <span class="titulo-fisga">FISGA</span>
+            <span class="ponto-status"></span>
+          </div>
+          <div class="linha-localizacao">
+            <span class="material-symbols-outlined text-[14px] text-cyan-600">location_on</span>
+            <span class="texto-localizacao" id="headerLocationLabel">Recife, PE</span>
+            <span class="material-symbols-outlined text-[14px]">expand_more</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="acoes-cabecalho">
+        <button aria-label="Notificações" class="botao-notificacao">
+          <span class="material-symbols-outlined text-[22px]">notifications</span>
+          <span class="bolinha-notificacao"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="conteudo-principal">
+    <div class="container-conteudo">
+      <section class="secao-saudacao">
+        <div class="linha-saudacao">
+          <div>
+            <div class="titulo-saudacao">
+              <span class="texto-ola">Olá, Pescador!</span>
+              <span class="text-xl">🎣</span>
+            </div>
+            <div class="status-atividade">
+              <span class="bolinha-status-ativo"></span>
+              <p class="texto-atividade">
+                Atividade hoje: <span class="destaque-atividade">estimativa no gráfico</span>
+              </p>
+            </div>
+          </div>
+          <div class="icone-ondas">
+            <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">waves</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="secao-card-clima">
+        <div class="card-clima">
+          <div class="efeito-luz-1"></div>
+          <div class="efeito-luz-2"></div>
+
+          <div class="topo-card-clima">
+            <div class="titulo-card-clima">
+              <div class="icone-card-clima">
+                <span class="material-symbols-outlined text-[18px] text-cyan-200">tsunami</span>
+              </div>
+              <div>
+                <span class="subtitulo-card-clima">Marés oficiais &amp; estimativas do dia</span>
+                <span class="nome-local-clima" id="climateLocationLabel">Litoral de Pernambuco</span>
+              </div>
+            </div>
+            <div class="tag-hoje">
+              <span class="material-symbols-outlined text-[14px] text-green-300">routine</span>
+              <span id="tideDateBadge">Hoje</span>
+            </div>
+          </div>
+
+          <div class="bloco-temperatura-lua">
+            <div class="dados-temperatura">
+              <div class="icone-tempo">
+                <span class="material-symbols-outlined text-[32px] text-cyan-200">partly_cloudy_day</span>
+              </div>
+              <div class="info-temperatura">
+                <div class="linha-graus">
+                  <span class="graus-principal">--°</span>
+                  <span class="graus-min-max">--° / --°</span>
+                </div>
+                <span class="detalhe-tempo">Clima não conectado</span>
+              </div>
+            </div>
+            <div class="dados-lua">
+              <div class="tag-fase-lua">
+                <span class="material-symbols-outlined text-[14px] text-cyan-200">brightness_3</span>
+                <span>Lua • sem dados</span>
+              </div>
+              <span class="fase-iluminacao">Informação lunar indisponível</span>
+              <span class="horario-sol-lua">Horários do sol estimados abaixo</span>
+            </div>
+          </div>
+
+          <div class="bloco-tabua-mares">
+            <div class="cabecalho-mares">
+              <div class="titulo-mares">
+                <span class="material-symbols-outlined text-[16px] text-cyan-200" aria-hidden="true">waves</span>
+                <span>Marés e atividade</span>
+              </div>
+              <div class="status-mare">
+                <span class="material-symbols-outlined text-[13px]" aria-hidden="true">water</span>
+                <span>Pico <span id="peakTideHeight">—</span></span>
+              </div>
+            </div>
+
+            <label class="tide-location-control" for="tideLocationSelect">
+              <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+              <span class="tide-location-label">Localidade</span>
+              <select id="tideLocationSelect" aria-label="Escolher localidade">
+                <option value="">Carregando localidades…</option>
+              </select>
+            </label>
+            <p class="tide-station-label" id="tideStationLabel" aria-live="polite"></p>
+
+            <div class="tide-date-picker">
+              <button class="tide-day-button" id="previousTideDay" type="button" aria-label="Dia anterior">
+                <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+              </button>
+              <div class="tide-calendar-control">
+                <button class="tide-date-label" id="tideCalendarToggle" type="button" aria-label="Escolher dia das marés" aria-expanded="false" aria-controls="tideCalendar">
+                  <span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>
+                  <span id="tideSelectedDate"></span>
+                  <span class="material-symbols-outlined tide-calendar-chevron" aria-hidden="true">expand_more</span>
+                </button>
+                <div class="tide-calendar-popover" id="tideCalendar" hidden>
+                  <div class="tide-calendar-header">
+                    <button class="tide-calendar-month-button" id="previousTideMonth" type="button" aria-label="Mês anterior">
+                      <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+                    </button>
+                    <span class="tide-calendar-month" id="tideCalendarMonth" aria-live="polite"></span>
+                    <button class="tide-calendar-month-button" id="nextTideMonth" type="button" aria-label="Próximo mês">
+                      <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+                    </button>
+                  </div>
+                  <div class="tide-calendar-weekdays" aria-hidden="true">
+                    <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+                  </div>
+                  <div class="tide-calendar-days" id="tideCalendarDays" role="grid" aria-label="Dias do mês"></div>
+                  <button class="tide-calendar-today" id="tideCalendarToday" type="button">Ir para hoje</button>
+                </div>
+              </div>
+              <button class="tide-day-button" id="nextTideDay" type="button" aria-label="Dia seguinte">
+                <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+              </button>
+            </div>
+
+            <div class="tide-chart-wrap">
+              <div class="tide-y-labels" aria-hidden="true">
+                <span>3 m</span><span>2 m</span><span>1 m</span><span>0 m</span>
+              </div>
+              <div class="tide-chart-content">
+                <svg class="tide-chart" id="tideChart" role="img" aria-labelledby="tideChartTitle tideChartDescription" viewBox="0 0 320 150" preserveAspectRatio="none">
+                  <title id="tideChartTitle">Extremos oficiais e curva estimada da maré</title>
+                  <desc id="tideChartDescription">Horários e alturas dos extremos de maré da API; a curva entre eles e as faixas com peixes são estimativas.</desc>
+                  <defs>
+                    <linearGradient id="tideAreaGradient" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stop-color="#54d5ff" stop-opacity=".3"></stop>
+                      <stop offset="100%" stop-color="#54d5ff" stop-opacity=".02"></stop>
+                    </linearGradient>
+                  </defs>
+                  <g class="tide-grid-lines" aria-hidden="true">
+                    <path d="M0 12H320 M0 50H320 M0 88H320 M0 126H320"></path>
+                  </g>
+                  <rect class="tide-fish-water" x="0" y="108" width="320" height="18" aria-hidden="true"></rect>
+                  <path id="tideArea" class="tide-area"></path>
+                  <g id="fishActivityMarkers" aria-hidden="true"></g>
+                  <g id="sunMarkers" aria-hidden="true"></g>
+                  <path id="tideLine" class="tide-line"></path>
+                  <g id="tideEvents"></g>
+                  <g class="tide-x-labels" aria-hidden="true">
+                    <text x="2" y="146">00</text>
+                    <text x="78" y="146">06</text>
+                    <text x="158" y="146">12</text>
+                    <text x="238" y="146">18</text>
+                    <text x="300" y="146">24h</text>
+                  </g>
+                </svg>
+              </div>
+            </div>
+
+            <div class="tide-sun-times" aria-label="Horários do sol">
+              <div class="tide-sun-event">
+                <span class="material-symbols-outlined" aria-hidden="true">wb_twilight</span>
+                <span><strong>Nascer do sol (estimado)</strong><time id="sunriseTime">--:--</time></span>
+              </div>
+              <div class="tide-sun-event">
+                <span class="material-symbols-outlined" aria-hidden="true">wb_twilight</span>
+                <span><strong>Pôr do sol (estimado)</strong><time id="sunsetTime">--:--</time></span>
+              </div>
+            </div>
+
+            <div class="fish-activity">
+              <div class="fish-activity-heading">
+                <span class="material-symbols-outlined" aria-hidden="true">phishing</span>
+                <span>Movimentação dos peixes</span>
+                <strong id="fishActivityScore">Estimativa</strong>
+              </div>
+              <div class="fish-activity-track" id="fishActivityTrack" aria-label="Previsão de atividade dos peixes ao longo do dia"></div>
+              <div class="fish-activity-periods" id="fishActivityPeriods"></div>
+            </div>
+
+            <p class="tide-data-note" id="tideDataNote" aria-live="polite">Consultando os dados oficiais de maré…</p>
+            <p class="tide-source-note">Horários e alturas dos extremos: <a href="https://tabuamare.api.br/docs" target="_blank" rel="noopener noreferrer">Tábua de Maré API</a>. A linha do gráfico, o sol e a atividade dos peixes são estimativas independentes.</p>
+
+            <div class="grade-horarios-mares" id="tideEventList" aria-label="Horários previstos de maré"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="secao-acoes-rapidas">
+        <div class="grade-acoes">
+          <button class="botao-acao-rapida group" type="button">
+            <div class="icone-acao-rapida bg-cyan-100 text-cyan-700">
+              <span class="material-symbols-outlined text-[22px]">gps_fixed</span>
+            </div>
+            <span class="rotulo-acao-rapida">Locais</span>
+          </button>
+          <button class="botao-acao-rapida group" type="button">
+            <div class="icone-acao-rapida bg-emerald-100 text-emerald-700">
+              <span class="material-symbols-outlined text-[22px]">phishing</span>
+            </div>
+            <span class="rotulo-acao-rapida">Pesca</span>
+          </button>
+          <button class="botao-acao-rapida group" type="button">
+            <div class="icone-acao-rapida bg-orange-100 text-orange-700">
+              <span class="material-symbols-outlined text-[22px]">bolt</span>
+            </div>
+            <span class="rotulo-acao-rapida">Ações</span>
+          </button>
+          <button class="botao-acao-rapida group" type="button">
+            <div class="icone-acao-rapida bg-violet-100 text-violet-700">
+              <span class="material-symbols-outlined text-[22px]">cloud</span>
+            </div>
+            <span class="rotulo-acao-rapida">Clima</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="secao-trofeus">
+        <div class="cabecalho-secao">
+          <div class="titulo-com-icone">
+            <span class="material-symbols-outlined text-cyan-700 text-[20px]">workspace_premium</span>
+            <span class="texto-titulo-secao">Capturas Recentes</span>
+          </div>
+          <button class="botao-link">Ver todas</button>
+        </div>
+
+        <div class="carrossel-trofeus sem-barra-rolagem">
+          <div class="card-trofeu">
+            <div class="imagem-trofeu-container">
+              <img class="imagem-trofeu" alt="Robalo Flecha" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCbbjiBz7Q0kqiZQxzsm3cc73yDnfb8BOAKDv-hCkuVb-fhi57AvJTq-b9W03GEAem-ab45K6CNW5UBOlsIHaZNYp6FbXUs68lSwv91E2z0NGSmfHJFQTaODiXxSBfFW2hUCyNj21y0hmCQfbV-K9IgzeXskiXMLjfOgfw8bdyfaF5QHmwoHVnTmsoVbQumhRf60ent1DlGXJLB-SxZ6I-cFpMvm-_mZKCkC2C6tOGxqJdlgxFYXBWMdg">
+              <div class="tag-trofeu-destaque">
+                <span class="material-symbols-outlined text-[12px]">verified</span>
+                Recorde Pessoal
+              </div>
+              <div class="medidas-peixe">84 cm &bull; 6,1 kg</div>
+            </div>
+            <div class="info-trofeu">
+              <div class="linha-nome-data">
+                <h4 class="nome-peixe">Robalo Flecha</h4>
+                <span class="data-captura">Ontem</span>
+              </div>
+              <p class="local-captura">
+                <span class="material-symbols-outlined text-[14px] text-cyan-600">location_on</span>
+                Estuário do Capibaribe, Recife
+              </p>
+              <div class="tags-detalhes">
+                <span class="tag-cinza">Isca: Jig 20g</span>
+                <span class="tag-verde font-semibold">Solto Vivo</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-trofeu">
+            <div class="imagem-trofeu-container">
+              <img class="imagem-trofeu" alt="Cioba" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB6_bBM3sLo6ruJaVVaaCCoyMWtmgjDTUmbmQJ4kDQ1RZijdsbdrR8-c0OIpYxDIoHTYItxnt5cSPmQnG0IxNaXjrsFouMxIOveVZK2AFU2uQj3e2mPo-CakuSa6HzNCLkFA_oMhmg3DxtJSE3KRHjQYMzM56A2AJNTBvlXwKlWRcoxituD-BaTV452f-ehr43_xtjXRrlD-_DgiUSNgyn-eHeAA1FoWDhNTjJV1jr3-v8GeHdBXf153A">
+              <div class="tag-trofeu-azul">
+                <span class="material-symbols-outlined text-[12px]">star</span>
+                Troféu Salgado
+              </div>
+              <div class="medidas-peixe">52 cm &bull; 2,8 kg</div>
+            </div>
+            <div class="info-trofeu">
+              <div class="linha-nome-data">
+                <h4 class="nome-peixe">Cioba</h4>
+                <span class="data-captura">S&aacute;bado</span>
+              </div>
+              <p class="local-captura">
+                <span class="material-symbols-outlined text-[14px] text-cyan-600">location_on</span>
+                Recifes de Boa Viagem, Recife
+              </p>
+              <div class="tags-detalhes">
+                <span class="tag-cinza">Isca: Camar&atilde;o vivo</span>
+                <span class="tag-cinza">Mar&eacute; Enchente</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-mais-capturas">
+            <div class="icone-album">
+              <span class="material-symbols-outlined text-[24px]">photo_library</span>
+            </div>
+            <span class="titulo-mais-capturas">Mais 18 Fisgas</span>
+            <span class="subtitulo-mais-capturas">Explore sua galeria completa</span>
+            <button class="botao-abrir-album" type="button">Abrir Álbum</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="secao-hotspots">
+        <div class="cabecalho-secao">
+          <div class="titulo-com-icone">
+            <span class="material-symbols-outlined text-cyan-700 text-[20px]">explore</span>
+            <span class="texto-titulo-secao">Locais Próximos</span>
+          </div>
+          <button class="botao-link">Mapa Geral</button>
+        </div>
+
+        <div class="lista-hotspots">
+          <div class="card-hotspot">
+            <div class="imagem-hotspot-container">
+              <img class="imagem-hotspot" alt="Praia de Boa Viagem" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKWCShXAxMnhUkV1oo2SC9tRMOKXgupJW1H8lQRyYMdc35BicD8-e9O9Po8kM7i4NTwI-d1mu7VQqckXaCadO8VqR9wl4MbXvI_1MyP34YgCQftOIQLnVY0SYTZMYseRseJ0YQmOiAqK556Bf_GYsa3PgjJ-Q4y36m-Lfaq-f87o5kIjD9d8Y2wU0rRFKVUW_vgF9aL_xi12Z60sRAhqA1VvWh-quW6Mi5YfWDZ94CUznls_6KfNYV2g">
+              <span class="badge-distancia">3 km</span>
+            </div>
+            <div class="detalhes-hotspot">
+              <div class="linha-titulo-hotspot">
+                <h5 class="nome-hotspot">Recifes de Boa Viagem</h5>
+                <span class="tag-probabilidade-alta">91% Alta</span>
+              </div>
+              <p class="descricao-hotspot">Recife de coral &bull; &Agrave;gua transparente</p>
+              <div class="linha-tags-hotspot">
+                <span class="tag-especie">
+                  <span class="material-symbols-outlined text-[14px]">phishing</span>
+                  Cioba &amp; Garoupa
+                </span>
+                <span class="text-slate-300">&bull;</span>
+                <span class="profundidade-hotspot">Prof. 2 a 8m</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-hotspot">
+            <div class="imagem-hotspot-container">
+              <img class="imagem-hotspot" alt="Estuário do Rio Capibaribe" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_UrLkaJ0xwWCuNU9McTrGHsJ3BA5TzYFNP_9-ufOCch3rdEvpNyB4nDRVStMoxLBkx--tRZzZFvm-Wmw97v2yNQwzWd8Brd-J498dafwS7Jb3ljUNC_YFmWAWh1tx-mODYAZP1cRrCZwVYmMwSphFHuAco2j7odiJmT6x71mI-2MmQh7Yhfa80H9CDRG90LhFTDn26Q2VdtZxmixIULcESR_FIaHZTba4uMbd_NyhWFwSlNJThqbKYg">
+              <span class="badge-distancia">6 km</span>
+            </div>
+            <div class="detalhes-hotspot">
+              <div class="linha-titulo-hotspot">
+                <h5 class="nome-hotspot">Estuário do Capibaribe</h5>
+                <span class="tag-probabilidade-boa">84% Boa</span>
+              </div>
+              <p class="descricao-hotspot">Mar&eacute; mista &bull; Mangue ciliar</p>
+              <div class="linha-tags-hotspot">
+                <span class="tag-especie">
+                  <span class="material-symbols-outlined text-[14px]">phishing</span>
+                  Robalo &amp; Tainha
+                </span>
+                <span class="text-slate-300">&bull;</span>
+                <span class="profundidade-hotspot">Prof. 1 a 5m</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="secao-dica-comunidade">
+        <div class="card-dica">
+          <div class="icone-dica">
+            <span class="material-symbols-outlined text-[20px]">lightbulb</span>
+          </div>
+          <div class="conteudo-dica">
+            <div class="cabecalho-dica">
+              <span class="titulo-dica">Dica da Comunidade Fisga</span>
+              <span class="badge-autor">Guia Pro</span>
+            </div>
+            <p class="texto-dica">
+              "Na mar&eacute; enchente do Capibaribe, o robalo fica ativo nas bordas do mangue. Use jigs leves entre 15-20g e fa&ccedil;a recolhimento lento rente &agrave; vegeta&ccedil;&atilde;o. Final de tarde &eacute; o melhor hor&aacute;rio!"
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <div class="container-botao-flutuante" id="fabRegistrar">
+        <button class="botao-flutuante" type="button" id="btnRegistrarFisga">
+          <span class="material-symbols-outlined text-[24px]">add</span>
+          <span>Registrar Fisga</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== PAINEL: LOCAIS ===== -->
+    <div class="painel-tab" id="painel-locais" hidden>
+      <div class="container-conteudo">
+        <section class="secao-painel">
+          <div class="painel-header">
+            <div class="painel-header-icon bg-cyan-100 text-cyan-700">
+              <span class="material-symbols-outlined text-[22px]">map</span>
+            </div>
+            <div>
+              <h2 class="painel-titulo">Locais de Pesca</h2>
+              <p class="painel-subtitulo">Hotspots e pontos próximos a você</p>
+            </div>
+          </div>
+
+          <!-- Barra de busca -->
+          <div class="busca-local">
+            <span class="material-symbols-outlined busca-icone">search</span>
+            <input type="text" class="busca-input" id="buscaLocalInput" placeholder="Buscar local, represa, rio…" />
+          </div>
+
+          <!-- Filtros rápidos -->
+          <div class="filtros-locais">
+            <button class="filtro-chip ativo" data-filtro="todos">Todos</button>
+            <button class="filtro-chip" data-filtro="mar">Mar</button>
+            <button class="filtro-chip" data-filtro="estuario">Estuário</button>
+            <button class="filtro-chip" data-filtro="mangue">Mangue</button>
+            <button class="filtro-chip" data-filtro="praia">Praias</button>
+          </div>
+
+          <!-- Mapa placeholder -->
+          <div class="mapa-container" id="mapaContainer">
+            <div class="mapa-overlay">
+              <div class="mapa-pin-centro">
+                <span class="material-symbols-outlined text-[32px] text-cyan-400">my_location</span>
+              </div>
+              <!-- Boa Viagem -->
+              <div class="mapa-pin" style="top:30%;left:55%" title="Recifes de Boa Viagem">
+                <span class="material-symbols-outlined text-[20px]">location_on</span>
+                <span class="pin-label">91%</span>
+              </div>
+              <!-- Capibaribe -->
+              <div class="mapa-pin mapa-pin-medio" style="top:48%;left:38%" title="Estuário do Capibaribe">
+                <span class="material-symbols-outlined text-[18px]">location_on</span>
+                <span class="pin-label">84%</span>
+              </div>
+              <!-- Itamaracá -->
+              <div class="mapa-pin mapa-pin-baixo" style="top:20%;left:62%" title="Ilha de Itamaracá">
+                <span class="material-symbols-outlined text-[16px]">location_on</span>
+                <span class="pin-label">76%</span>
+              </div>
+            </div>
+            <div class="mapa-info-bar">
+              <span class="material-symbols-outlined text-[14px] text-cyan-300">radar</span>
+              <span>5 hotspots no litoral de Pernambuco</span>
+              <button class="mapa-btn-expandir">Ver mapa completo</button>
+            </div>
+          </div>
+
+          <!-- Lista de hotspots -->
+          <div class="cabecalho-secao" style="padding: 0;">
+            <div class="titulo-com-icone">
+              <span class="material-symbols-outlined text-cyan-700 text-[20px]">explore</span>
+              <span class="texto-titulo-secao">Pontos Próximos</span>
+            </div>
+            <button class="botao-link">Ordenar</button>
+          </div>
+
+          <div class="lista-locais-completa">
+            <!-- Recifes de Boa Viagem -->
+            <div class="card-local">
+              <div class="card-local-header">
+                <div class="card-local-icone" style="background:#e0f7fa;color:#00838f">
+                  <span class="material-symbols-outlined text-[20px]">water</span>
+                </div>
+                <div class="card-local-info">
+                  <h4 class="card-local-nome">Recifes de Boa Viagem</h4>
+                  <p class="card-local-desc">Recife de coral &bull; &Agrave;gua transparente &bull; 3 km</p>
+                </div>
+                <span class="badge-prob alta">91%</span>
+              </div>
+              <div class="card-local-tags">
+                <span class="tag-especie"><span class="material-symbols-outlined text-[13px]">phishing</span>Cioba &amp; Garoupa</span>
+                <span class="tag-cinza">Prof. 2&ndash;8 m</span>
+                <span class="tag-cinza">Manh&atilde;</span>
+              </div>
+              <button class="btn-ver-local">
+                <span class="material-symbols-outlined text-[16px]">directions</span>
+                Como chegar
+              </button>
+            </div>
+
+            <!-- Estuário do Capibaribe -->
+            <div class="card-local">
+              <div class="card-local-header">
+                <div class="card-local-icone" style="background:#e8f5e9;color:#2e7d32">
+                  <span class="material-symbols-outlined text-[20px]">waves</span>
+                </div>
+                <div class="card-local-info">
+                  <h4 class="card-local-nome">Estuário do Capibaribe</h4>
+                  <p class="card-local-desc">Mar&eacute; mista &bull; Mangue ciliar &bull; 6 km</p>
+                </div>
+                <span class="badge-prob alta">84%</span>
+              </div>
+              <div class="card-local-tags">
+                <span class="tag-especie"><span class="material-symbols-outlined text-[13px]">phishing</span>Robalo &amp; Tainha</span>
+                <span class="tag-cinza">Prof. 1&ndash;5 m</span>
+                <span class="tag-cinza">Enchente</span>
+              </div>
+              <button class="btn-ver-local">
+                <span class="material-symbols-outlined text-[16px]">directions</span>
+                Como chegar
+              </button>
+            </div>
+
+            <!-- Ilha de Itamaracá -->
+            <div class="card-local">
+              <div class="card-local-header">
+                <div class="card-local-icone" style="background:#fff3e0;color:#e65100">
+                  <span class="material-symbols-outlined text-[20px]">anchor</span>
+                </div>
+                <div class="card-local-info">
+                  <h4 class="card-local-nome">Canal de Itamarac&aacute;</h4>
+                  <p class="card-local-desc">&Aacute;guas estuarinas &bull; Canal de 45 km</p>
+                </div>
+                <span class="badge-prob media">76%</span>
+              </div>
+              <div class="card-local-tags">
+                <span class="tag-especie"><span class="material-symbols-outlined text-[13px]">phishing</span>Bijupir&aacute; &amp; Cavala</span>
+                <span class="tag-cinza">Prof. 3&ndash;10 m</span>
+              </div>
+              <button class="btn-ver-local">
+                <span class="material-symbols-outlined text-[16px]">directions</span>
+                Como chegar
+              </button>
+            </div>
+
+            <!-- Rio Beberibe -->
+            <div class="card-local">
+              <div class="card-local-header">
+                <div class="card-local-icone" style="background:#f3e5f5;color:#7b1fa2">
+                  <span class="material-symbols-outlined text-[20px]">waterfall_chart</span>
+                </div>
+                <div class="card-local-info">
+                  <h4 class="card-local-nome">Estuário do Beberibe</h4>
+                  <p class="card-local-desc">Manguezal preservado &bull; Foz estuarina &bull; 9 km</p>
+                </div>
+                <span class="badge-prob media">71%</span>
+              </div>
+              <div class="card-local-tags">
+                <span class="tag-especie"><span class="material-symbols-outlined text-[13px]">phishing</span>Robalo &amp; Carapeba</span>
+                <span class="tag-cinza">Prof. 1&ndash;4 m</span>
+              </div>
+              <button class="btn-ver-local">
+                <span class="material-symbols-outlined text-[16px]">directions</span>
+                Como chegar
+              </button>
+            </div>
+
+            <!-- Farol de Santa Maria -->
+            <div class="card-local">
+              <div class="card-local-header">
+                <div class="card-local-icone" style="background:#e3f2fd;color:#1565c0">
+                  <span class="material-symbols-outlined text-[20px]">lighthouse</span>
+                </div>
+                <div class="card-local-info">
+                  <h4 class="card-local-nome">Farol de Santa Maria</h4>
+                  <p class="card-local-desc">Pesca embarcada &bull; Mar aberto &bull; 18 km</p>
+                </div>
+                <span class="badge-prob baixa">65%</span>
+              </div>
+              <div class="card-local-tags">
+                <span class="tag-especie"><span class="material-symbols-outlined text-[13px]">phishing</span>Atum &amp; Dourado</span>
+                <span class="tag-cinza">Prof. 15&ndash;40 m</span>
+              </div>
+              <button class="btn-ver-local">
+                <span class="material-symbols-outlined text-[16px]">directions</span>
+                Como chegar
+              </button>
+            </div>
+
+            <div class="card-adicionar-local">
+              <span class="material-symbols-outlined text-[28px] text-cyan-600">add_location_alt</span>
+              <span class="card-adicionar-titulo">Adicionar Local</span>
+              <span class="card-adicionar-sub">Compartilhe um ponto de pesca em Pernambuco</span>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- ===== PAINEL: CAPTURAS ===== -->
+    <div class="painel-tab" id="painel-capturas" hidden>
+      <div class="container-conteudo">
+        <section class="secao-painel">
+          <div class="painel-header">
+            <div class="painel-header-icon bg-yellow-100 text-yellow-700">
+              <span class="material-symbols-outlined text-[22px]">emoji_events</span>
+            </div>
+            <div>
+              <h2 class="painel-titulo">Minhas Capturas</h2>
+              <p class="painel-subtitulo">Seu diário de pesca completo</p>
+            </div>
+            <button class="btn-nova-captura" id="btnNovaCaptura">
+              <span class="material-symbols-outlined text-[18px]">add</span>
+            </button>
+          </div>
+
+          <!-- Estatísticas rápidas -->
+          <div class="stats-capturas">
+            <div class="stat-card">
+              <span class="stat-numero">23</span>
+              <span class="stat-label">Capturas</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-numero">8</span>
+              <span class="stat-label">Espécies</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-numero">5,8kg</span>
+              <span class="stat-label">Recorde</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-numero">12</span>
+              <span class="stat-label">Soltos</span>
+            </div>
+          </div>
+
+          <!-- Filtro por mês -->
+          <div class="filtro-mes-capturas">
+            <button class="filtro-mes-btn" id="mesBtnAnterior">
+              <span class="material-symbols-outlined">chevron_left</span>
+            </button>
+            <span class="filtro-mes-label" id="mesAtualLabel">Outubro 2026</span>
+            <button class="filtro-mes-btn" id="mesBtnProximo">
+              <span class="material-symbols-outlined">chevron_right</span>
+            </button>
+          </div>
+
+          <!-- Grade de capturas -->
+          <div class="grade-capturas">
+            <div class="card-captura destaque">
+              <img class="captura-img" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCbbjiBz7Q0kqiZQxzsm3cc73yDnfb8BOAKDv-hCkuVb-fhi57AvJTq-b9W03GEAem-ab45K6CNW5UBOlsIHaZNYp6FbXUs68lSwv91E2z0NGSmfHJFQTaODiXxSBfFW2hUCyNj21y0hmCQfbV-K9IgzeXskiXMLjfOgfw8bdyfaF5QHmwoHVnTmsoVbQumhRf60ent1DlGXJLB-SxZ6I-cFpMvm-_mZKCkC2C6tOGxqJdlgxFYXBWMdg" alt="Robalo Flecha">
+              <div class="captura-overlay">
+                <span class="captura-badge-rec">
+                  <span class="material-symbols-outlined text-[11px]">verified</span>
+                  Recorde
+                </span>
+              </div>
+              <div class="captura-info">
+                <strong class="captura-especie">Robalo Flecha</strong>
+                <span class="captura-medida">84 cm &bull; 6,1 kg</span>
+                <span class="captura-data">Ontem &bull; Capibaribe, Recife</span>
+              </div>
+            </div>
+
+            <div class="card-captura">
+              <img class="captura-img" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB6_bBM3sLo6ruJaVVaaCCoyMWtmgjDTUmbmQJ4kDQ1RZijdsbdrR8-c0OIpYxDIoHTYItxnt5cSPmQnG0IxNaXjrsFouMxIOveVZK2AFU2uQj3e2mPo-CakuSa6HzNCLkFA_oMhmg3DxtJSE3KRHjQYMzM56A2AJNTBvlXwKlWRcoxituD-BaTV452f-ehr43_xtjXRrlD-_DgiUSNgyn-eHeAA1FoWDhNTjJV1jr3-v8GeHdBXf153A" alt="Cioba">
+              <div class="captura-info">
+                <strong class="captura-especie">Cioba</strong>
+                <span class="captura-medida">52 cm &bull; 2,8 kg</span>
+                <span class="captura-data">S&aacute;bado &bull; Boa Viagem, Recife</span>
+              </div>
+            </div>
+
+            <div class="card-captura">
+              <div class="captura-img captura-img-placeholder">
+                <span class="material-symbols-outlined text-[32px] text-slate-300">phishing</span>
+              </div>
+              <div class="captura-info">
+                <strong class="captura-especie">Tainha</strong>
+                <span class="captura-medida">48 cm &bull; 1,9 kg</span>
+                <span class="captura-data">18/10 &bull; Beberibe, Recife</span>
+              </div>
+            </div>
+
+            <div class="card-captura">
+              <div class="captura-img captura-img-placeholder">
+                <span class="material-symbols-outlined text-[32px] text-slate-300">phishing</span>
+              </div>
+              <div class="captura-info">
+                <strong class="captura-especie">Bijupir&aacute;</strong>
+                <span class="captura-medida">71 cm &bull; 4,3 kg</span>
+                <span class="captura-data">10/10 &bull; Itamarac&aacute;, PE</span>
+              </div>
+            </div>
+
+            <div class="card-captura card-nova-captura" id="cardNovaCaptura">
+              <span class="material-symbols-outlined text-[36px] text-cyan-400">add_a_photo</span>
+              <span class="nova-captura-label">Registrar nova fisga</span>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div class="container-botao-flutuante">
+        <button class="botao-flutuante" type="button" id="btnRegistrarFisgaCapturas">
+          <span class="material-symbols-outlined text-[24px]">add</span>
+          <span>Nova Captura</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== PAINEL: PERFIL ===== -->
+    <div class="painel-tab" id="painel-perfil" hidden>
+      <div class="container-conteudo">
+        <section class="secao-painel">
+          <!-- Cabeçalho do perfil -->
+          <div class="perfil-hero">
+            <div class="perfil-avatar-wrap">
+              <div class="perfil-avatar">
+                <span class="material-symbols-outlined text-[48px] text-white" style="font-variation-settings: 'FILL' 1;">account_circle</span>
+              </div>
+              <button class="perfil-editar-foto" aria-label="Alterar foto">
+                <span class="material-symbols-outlined text-[14px]">photo_camera</span>
+              </button>
+            </div>
+            <div class="perfil-dados">
+              <h2 class="perfil-nome">Pescador</h2>
+              <p class="perfil-localizacao">
+                <span class="material-symbols-outlined text-[13px] text-cyan-500">location_on</span>
+                Recife, PE
+              </p>
+              <div class="perfil-badges">
+                <span class="perfil-badge">
+                  <span class="material-symbols-outlined text-[12px]">workspace_premium</span>
+                  Guia Pro
+                </span>
+                <span class="perfil-badge perfil-badge-verde">
+                  <span class="material-symbols-outlined text-[12px]">eco</span>
+                  Pesca Sustentável
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Estatísticas do pescador -->
+          <div class="perfil-stats-grid">
+            <div class="perfil-stat">
+              <span class="perfil-stat-numero">23</span>
+              <span class="perfil-stat-label">Capturas</span>
+            </div>
+            <div class="perfil-stat">
+              <span class="perfil-stat-numero">8</span>
+              <span class="perfil-stat-label">Espécies</span>
+            </div>
+            <div class="perfil-stat">
+              <span class="perfil-stat-numero">12</span>
+              <span class="perfil-stat-label">Soltos</span>
+            </div>
+            <div class="perfil-stat">
+              <span class="perfil-stat-numero">6</span>
+              <span class="perfil-stat-label">Locais</span>
+            </div>
+          </div>
+
+          <!-- Conquistas -->
+          <div class="cabecalho-secao" style="padding:0;margin-bottom:0.75rem">
+            <div class="titulo-com-icone">
+              <span class="material-symbols-outlined text-cyan-700 text-[20px]">military_tech</span>
+              <span class="texto-titulo-secao">Conquistas</span>
+            </div>
+            <button class="botao-link">Ver todas</button>
+          </div>
+          <div class="conquistas-lista">
+            <div class="conquista-item conquistado">
+              <div class="conquista-icone">
+                <span class="material-symbols-outlined text-[22px]">emoji_events</span>
+              </div>
+              <div class="conquista-info">
+                <strong>Primeira Fisga</strong>
+                <span>Registrou sua 1&ordf; captura em Recife</span>
+              </div>
+              <span class="material-symbols-outlined text-green-500 text-[20px]">check_circle</span>
+            </div>
+            <div class="conquista-item conquistado">
+              <div class="conquista-icone amarelo">
+                <span class="material-symbols-outlined text-[22px]">workspace_premium</span>
+              </div>
+              <div class="conquista-info">
+                <strong>Rei do Estuário</strong>
+                <span>Capturou Robalo acima de 5 kg no Capibaribe</span>
+              </div>
+              <span class="material-symbols-outlined text-green-500 text-[20px]">check_circle</span>
+            </div>
+            <div class="conquista-item">
+              <div class="conquista-icone cinza">
+                <span class="material-symbols-outlined text-[22px]">waves</span>
+              </div>
+              <div class="conquista-info">
+                <strong>Mestre do Recife</strong>
+                <span>10 capturas nos recifes de coral de PE</span>
+              </div>
+              <span class="conquista-progresso">4/10</span>
+            </div>
+            <div class="conquista-item">
+              <div class="conquista-icone cinza">
+                <span class="material-symbols-outlined text-[22px]">anchor</span>
+              </div>
+              <div class="conquista-info">
+                <strong>Explorador do Litoral</strong>
+                <span>Pescou em 5 praias diferentes de Pernambuco</span>
+              </div>
+              <span class="conquista-progresso">2/5</span>
+            </div>
+          </div>
+
+          <!-- Configurações -->
+          <div class="cabecalho-secao" style="padding:0;margin-bottom:0.75rem;margin-top:1.25rem">
+            <div class="titulo-com-icone">
+              <span class="material-symbols-outlined text-cyan-700 text-[20px]">settings</span>
+              <span class="texto-titulo-secao">Configurações</span>
+            </div>
+          </div>
+          <div class="config-lista">
+            <button class="config-item">
+              <span class="material-symbols-outlined text-[20px] text-slate-500">person</span>
+              <span class="config-label">Editar perfil</span>
+              <span class="material-symbols-outlined text-[18px] text-slate-400">chevron_right</span>
+            </button>
+            <button class="config-item">
+              <span class="material-symbols-outlined text-[20px] text-slate-500">notifications</span>
+              <span class="config-label">Notificações</span>
+              <span class="material-symbols-outlined text-[18px] text-slate-400">chevron_right</span>
+            </button>
+            <button class="config-item">
+              <span class="material-symbols-outlined text-[20px] text-slate-500">share</span>
+              <span class="config-label">Compartilhar perfil</span>
+              <span class="material-symbols-outlined text-[18px] text-slate-400">chevron_right</span>
+            </button>
+            <button class="config-item">
+              <span class="material-symbols-outlined text-[20px] text-slate-500">help</span>
+              <span class="config-label">Ajuda & Suporte</span>
+              <span class="material-symbols-outlined text-[18px] text-slate-400">chevron_right</span>
+            </button>
+            <button class="config-item config-item-sair">
+              <span class="material-symbols-outlined text-[20px] text-red-400">logout</span>
+              <span class="config-label config-sair">Sair da conta</span>
+              <span class="material-symbols-outlined text-[18px] text-slate-400">chevron_right</span>
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <nav class="menu-navegacao-inferior" aria-label="Navegação principal">
+    <div class="container-menu-navegacao">
+      <button class="item-menu ativo" id="tab-inicio" data-tab="inicio" type="button">
+        <span class="material-symbols-outlined text-[22px]" aria-hidden="true">home</span>
+        <span class="rotulo-menu">Início</span>
+      </button>
+      <button class="item-menu" id="tab-locais" data-tab="locais" type="button">
+        <span class="material-symbols-outlined text-[22px]" aria-hidden="true">map</span>
+        <span class="rotulo-menu">Locais</span>
+      </button>
+      <button class="item-menu" id="tab-capturas" data-tab="capturas" type="button">
+        <span class="material-symbols-outlined text-[22px]" aria-hidden="true">emoji_events</span>
+        <span class="rotulo-menu">Capturas</span>
+      </button>
+      <button class="item-menu" id="tab-perfil" data-tab="perfil" type="button">
+        <span class="material-symbols-outlined text-[22px]" aria-hidden="true">person</span>
+        <span class="rotulo-menu">Perfil</span>
+      </button>
+    </div>
+  </nav>
+  </div>
+</body>
+</html>

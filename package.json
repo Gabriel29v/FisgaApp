@@ -1,0 +1,13 @@
+{
+  "name": "fisga-tide-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Painel de pesca com consulta de marés de Pernambuco",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
