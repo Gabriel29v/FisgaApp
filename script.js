@@ -1,4 +1,28 @@
 document.addEventListener('DOMContentLoaded', () => {
+  const apiRequest = async (endpoint, options = {}) => {
+    const requestOptions = {
+      credentials: 'same-origin',
+      ...options,
+      headers: {
+        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+        ...options.headers
+      }
+    };
+    const response = await fetch(endpoint, requestOptions);
+    let payload;
+    try {
+      payload = await response.json();
+    } catch {
+      throw new Error('O servidor retornou uma resposta inválida.');
+    }
+    if (!response.ok) {
+      const error = new Error(payload.error || 'Não foi possível concluir a solicitação.');
+      error.status = response.status;
+      throw error;
+    }
+    return payload;
+  };
+
   // Alternar Visibilidade da Senha
   const togglePassword = document.getElementById('togglePassword');
   const passwordInput = document.getElementById('password');
@@ -20,6 +44,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnSubmit = document.querySelector('.btn-submit');
   const confirmPasswordGroup = document.getElementById('confirmPasswordGroup');
   const confirmPasswordInput = document.getElementById('confirmPassword');
+  const displayNameGroup = document.getElementById('displayNameGroup');
+  const displayNameInput = document.getElementById('displayName');
+  const loginStatus = document.getElementById('loginStatus');
   const forgotPasswordLink = document.querySelector('.forgot-password');
   let isRegistering = false;
 
@@ -37,6 +64,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const setRegistrationMode = (registering) => {
       isRegistering = registering;
       if (confirmPasswordGroup) confirmPasswordGroup.hidden = !registering;
+      if (displayNameGroup) displayNameGroup.hidden = !registering;
+      if (displayNameInput) {
+        displayNameInput.disabled = !registering;
+        displayNameInput.required = registering;
+        if (!registering) displayNameInput.value = '';
+      }
       if (confirmPasswordInput) {
         confirmPasswordInput.disabled = !registering;
         confirmPasswordInput.required = registering;
@@ -76,11 +109,100 @@ document.addEventListener('DOMContentLoaded', () => {
   const loginForm = document.getElementById('loginForm');
 
   if (loginForm) {
-    loginForm.addEventListener('submit', (e) => {
+    const ensureLegacyAccount = async (credentials) => {
+      try {
+        return await apiRequest('/api/auth/login', {
+          method: 'POST',
+          body: JSON.stringify(credentials)
+        });
+      } catch (loginError) {
+        if (loginError.status !== 401) throw loginError;
+        try {
+          return await apiRequest('/api/auth/register', {
+            method: 'POST',
+            body: JSON.stringify({
+              ...credentials,
+              name: credentials.name || credentials.email.split('@')[0]
+            })
+          });
+        } catch (registerError) {
+          if (registerError.status !== 409) throw registerError;
+          return apiRequest('/api/auth/login', {
+            method: 'POST',
+            body: JSON.stringify(credentials)
+          });
+        }
+      }
+    };
+
+    loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const emailInput = document.getElementById('email');
-      const email = emailInput ? emailInput.value : '';
-      alert(`Tentativa de acesso com: ${email}`);
+      if (loginStatus) {
+        loginStatus.textContent = '';
+        loginStatus.dataset.state = '';
+      }
+      const submitButton = loginForm.querySelector('.btn-submit');
+      if (submitButton) submitButton.disabled = true;
+      try {
+        const auth = window.FisgaSupabaseChat;
+        if (!auth) throw new Error('O módulo de autenticação Supabase não carregou. Verifique a conexão com a internet.');
+        const payload = {
+          email: document.getElementById('email')?.value || '',
+          password: passwordInput?.value || ''
+        };
+        if (isRegistering) {
+          payload.name = displayNameInput?.value.trim() || '';
+          if (payload.password.length < 8) throw new Error('A senha deve ter pelo menos 8 caracteres.');
+          const result = await auth.registerWithSupabase(payload.email, payload.password, payload.name);
+          if (!result.session) {
+            if (loginStatus) {
+              loginStatus.dataset.state = 'success';
+              loginStatus.textContent = 'Conta criada. Confirme seu e-mail e depois entre para continuar.';
+            }
+            return;
+          }
+          await ensureLegacyAccount(payload);
+        } else {
+          try {
+            await auth.signInWithSupabase(payload.email, payload.password);
+          } catch (supabaseError) {
+            let legacyLogin;
+            try {
+              legacyLogin = await apiRequest('/api/auth/login', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+              });
+            } catch (legacyError) {
+              if (legacyError.status === 401) throw supabaseError;
+              throw legacyError;
+            }
+
+            let migration;
+            try {
+              migration = await auth.registerWithSupabase(
+                payload.email,
+                payload.password,
+                legacyLogin.user?.name || payload.email.split('@')[0]
+              );
+            } catch (migrationError) {
+              throw new Error(`Sua conta antiga foi validada, mas não foi possível habilitar o chat Supabase: ${migrationError.message}`);
+            }
+            if (!migration.session) {
+              if (loginStatus) {
+                loginStatus.dataset.state = 'success';
+                loginStatus.textContent = 'Conta antiga vinculada. Confirme seu e-mail e entre novamente para abrir o chat.';
+              }
+              return;
+            }
+          }
+          await ensureLegacyAccount(payload);
+        }
+        window.location.assign('/');
+      } catch (error) {
+        if (loginStatus) loginStatus.textContent = error.message;
+      } finally {
+        if (submitButton) submitButton.disabled = false;
+      }
     });
   }
 
@@ -629,11 +751,14 @@ document.addEventListener('DOMContentLoaded', () => {
   //  NAVEGAÇÃO POR ABAS (menu inferior)
   // ============================================================
   const tabButtons = document.querySelectorAll('.item-menu[data-tab]');
+  const menuNavigation = document.querySelector('.menu-navegacao-inferior');
   const mainContent = document.querySelector('.conteudo-principal > .container-conteudo');
   const paineis = {
     inicio:   null,
     locais:   document.getElementById('painel-locais'),
     capturas: document.getElementById('painel-capturas'),
+    conquistas: document.getElementById('painel-conquistas'),
+    chat:     document.getElementById('painel-chat'),
     perfil:   document.getElementById('painel-perfil'),
   };
 
@@ -644,6 +769,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Atualiza botões do menu
     tabButtons.forEach((btn) => {
       btn.classList.toggle('ativo', btn.dataset.tab === tabId);
+      btn.setAttribute('aria-current', btn.dataset.tab === tabId ? 'page' : 'false');
     });
 
     if (tabId === 'inicio') {
@@ -669,10 +795,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  tabButtons.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      ativarTab(btn.dataset.tab);
-    });
+  menuNavigation?.addEventListener('click', (event) => {
+    const button = event.target.closest('.item-menu[data-tab]');
+    if (!button || !menuNavigation.contains(button)) return;
+    event.preventDefault();
+    ativarTab(button.dataset.tab);
+  });
+  document.getElementById('viewAllAchievements')?.addEventListener('click', () => {
+    ativarTab('conquistas');
   });
 
   // ============================================================
@@ -718,4 +848,591 @@ document.addEventListener('DOMContentLoaded', () => {
       atualizarMesLabel();
     });
   }
+
+  const appNavigation = document.getElementById('tab-inicio');
+  if (!appNavigation) return;
+
+  const fisherSearch = document.getElementById('fisherSearch');
+  const fisherResults = document.getElementById('fisherResults');
+  const fisherProfile = document.getElementById('fisherProfile');
+  const chatFisherSearch = document.getElementById('chatFisherSearch');
+  const chatFisherResults = document.getElementById('chatFisherResults');
+  const friendshipResults = document.getElementById('friendshipResults');
+  const friendshipStatus = document.getElementById('friendshipStatus');
+  const leaderboardResults = document.getElementById('leaderboardResults');
+  const conversationList = document.getElementById('conversationList');
+  const groupMemberOptions = document.getElementById('groupMemberOptions');
+  const newGroupForm = document.getElementById('newGroupForm');
+  const groupFormStatus = document.getElementById('groupFormStatus');
+  const chatEmptyState = document.getElementById('chatEmptyState');
+  const chatActive = document.getElementById('chatActive');
+  const chatMessages = document.getElementById('chatMessages');
+  const chatMessageForm = document.getElementById('chatMessageForm');
+  const catchDialog = document.getElementById('catchDialog');
+  const catchForm = document.getElementById('catchForm');
+  const catchFormStatus = document.getElementById('catchFormStatus');
+  let currentUser = null;
+  let currentSupabaseUser = null;
+  let currentFriendships = [];
+  let activeConversationId = null;
+  let closeActiveRoom = null;
+  let groupFishersLoaded = false;
+  let searchTimer = null;
+  let chatSearchTimer = null;
+  let rankingTimer = null;
+  let chatRefreshInProgress = false;
+
+  const setStatus = (element, message, state = '') => {
+    if (!element) return;
+    element.textContent = message;
+    element.dataset.state = state;
+  };
+
+  const createElement = (tagName, className, text) => {
+    const element = document.createElement(tagName);
+    if (className) element.className = className;
+    if (text !== undefined) element.textContent = text;
+    return element;
+  };
+
+  const showEmpty = (parent, message) => {
+    parent.replaceChildren(createElement('p', 'community-empty', message));
+  };
+
+  const formatCatchDate = (value) => new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'medium'
+  }).format(new Date(value));
+
+  const renderCatchCards = (parent, catches) => {
+    if (!catches.length) {
+      showEmpty(parent, 'Ainda não há capturas registradas.');
+      return;
+    }
+    const cards = catches.map((record) => {
+      const card = createElement('article', 'card-captura');
+      let image;
+      if (record.imagePath) {
+        image = createElement('img', 'captura-img');
+        image.src = window.FisgaSupabaseChat.getCatchPhotoUrl(record.imagePath);
+        image.alt = `Peixe pescado: ${record.species}`;
+        image.loading = 'lazy';
+        image.addEventListener('error', () => {
+          const placeholder = createElement('div', 'captura-img captura-img-placeholder');
+          placeholder.append(createElement('span', 'material-symbols-outlined text-[32px] text-slate-300', 'phishing'));
+          image.replaceWith(placeholder);
+        }, { once: true });
+      } else {
+        image = createElement('div', 'captura-img captura-img-placeholder');
+        image.append(createElement('span', 'material-symbols-outlined text-[32px] text-slate-300', 'phishing'));
+      }
+      const info = createElement('div', 'captura-info');
+      info.append(
+        createElement('strong', 'captura-especie', record.species),
+        createElement('span', 'captura-medida', `${record.length} cm • ${record.weight} kg`),
+        createElement('span', 'captura-data', `${formatCatchDate(record.createdAt)}${record.location ? ` • ${record.location}` : ''}`)
+      );
+      card.append(image, info);
+      return card;
+    });
+    parent.replaceChildren(...cards);
+  };
+
+  const loadMyCatches = async () => {
+    const response = await apiRequest('/api/community/catches');
+    const catchList = document.getElementById('userCatchList');
+    const profileCatchList = document.getElementById('profileCatchList');
+    if (catchList) renderCatchCards(catchList, response.data);
+    if (profileCatchList) renderCatchCards(profileCatchList, response.data);
+    const profileStats = document.querySelectorAll('.perfil-stats-grid .perfil-stat-numero');
+    if (profileStats[0]) profileStats[0].textContent = String(response.data.length);
+    if (profileStats[1]) profileStats[1].textContent = String(new Set(response.data.map((record) => record.species.toLocaleLowerCase('pt-BR'))).size);
+  };
+
+  const startDirectConversation = async (fisher) => {
+    try {
+      const roomId = await window.FisgaSupabaseChat.createDirectRoom(fisher.id);
+      await loadConversations(roomId);
+      ativarTab('chat');
+    } catch (error) {
+      showEmpty(chatFisherResults, error.message);
+    }
+  };
+
+  const searchChatByName = (name) => {
+    ativarTab('chat');
+    chatFisherSearch.value = name;
+    loadChatFishers(name);
+  };
+
+  const renderFriendships = () => {
+    if (!currentFriendships.length) {
+      showEmpty(friendshipResults, 'Você ainda não tem amigos ou solicitações.');
+      return;
+    }
+
+    const items = currentFriendships.map((friendship) => {
+      const row = createElement('article', 'community-result chat-fisher-result');
+      const copy = createElement('div', 'community-result-copy');
+      const relationshipLabel = friendship.status === 'aceita'
+        ? 'Amigo'
+        : friendship.direction === 'received'
+          ? 'Solicitação recebida'
+          : 'Solicitação enviada';
+      copy.append(
+        createElement('strong', '', friendship.name),
+        createElement('span', '', relationshipLabel)
+      );
+      const actions = createElement('div', 'community-actions');
+
+      const addAction = (label, action, className = 'community-action') => {
+        const button = createElement('button', className, label);
+        button.type = 'button';
+        button.addEventListener('click', () => changeFriendship(friendship.userId, action));
+        actions.append(button);
+      };
+
+      if (friendship.status === 'aceita') {
+        addAction('Remover', 'remove');
+      } else if (friendship.direction === 'received') {
+        addAction('Aceitar', 'accept');
+        addAction('Recusar', 'reject');
+      } else {
+        addAction('Cancelar', 'remove');
+      }
+
+      row.append(copy, actions);
+      return row;
+    });
+    friendshipResults.replaceChildren(...items);
+  };
+
+  const loadFriendships = async () => {
+    currentFriendships = await window.FisgaSupabaseChat.listSupabaseFriendships();
+    renderFriendships();
+  };
+
+  document.getElementById('tab-chat')?.addEventListener('click', () => {
+    if (currentSupabaseUser) {
+      loadFriendships().catch((error) => setStatus(friendshipStatus, error.message, 'error'));
+    }
+  });
+
+  const changeFriendship = async (userId, action) => {
+    try {
+      let successMessage;
+      if (action === 'request') {
+        const status = await window.FisgaSupabaseChat.requestSupabaseFriendship(userId);
+        successMessage = status === 'aceita'
+          ? 'Vocês agora são amigos.'
+          : 'Solicitação de amizade enviada.';
+      } else if (action === 'accept' || action === 'reject') {
+        await window.FisgaSupabaseChat.respondSupabaseFriendship(userId, action === 'accept');
+        successMessage = action === 'accept' ? 'Solicitação aceita.' : 'Solicitação recusada.';
+      } else {
+        await window.FisgaSupabaseChat.removeSupabaseFriendship(userId);
+        successMessage = 'Amizade ou solicitação removida.';
+      }
+
+      await loadFriendships();
+      await loadChatFishers(chatFisherSearch?.value || '');
+      setStatus(friendshipStatus, successMessage, 'success');
+    } catch (error) {
+      setStatus(friendshipStatus, error.message, 'error');
+    }
+  };
+
+  const renderFisherProfile = (fisher, catches) => {
+    if (!fisherProfile) return;
+    fisherProfile.hidden = false;
+    fisherProfile.replaceChildren();
+    const heading = createElement('div', 'social-section-heading');
+    const headingCopy = createElement('div');
+    headingCopy.append(
+      createElement('h4', '', fisher.name),
+      createElement('p', '', `${catches.length} captura${catches.length === 1 ? '' : 's'} registrada${catches.length === 1 ? '' : 's'}`)
+    );
+    const messageButton = createElement('button', 'community-action', 'Conversar');
+    messageButton.type = 'button';
+    messageButton.addEventListener('click', () => searchChatByName(fisher.name));
+    headingCopy.append(messageButton);
+    heading.append(headingCopy);
+    fisherProfile.append(heading);
+    renderCatchCards(fisherProfile, catches);
+  };
+
+  const loadFisherProfile = async (fisherId) => {
+    try {
+      const response = await apiRequest(`/api/community/fishers/${encodeURIComponent(fisherId)}/catches`);
+      renderFisherProfile(response.fisher, response.data);
+    } catch (error) {
+      showEmpty(fisherProfile, error.message);
+    }
+  };
+
+  const populateGroupMembers = (fishers) => {
+    if (!groupMemberOptions) return;
+    if (!fishers.length) {
+      showEmpty(groupMemberOptions, 'Nenhum outro pescador cadastrado no Supabase.');
+      return;
+    }
+    const options = fishers.map((fisher) => {
+      const label = createElement('label', 'group-member-option');
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.name = 'memberIds';
+      checkbox.value = fisher.id;
+      label.append(checkbox, document.createTextNode(fisher.nome_usuario));
+      return label;
+    });
+    groupMemberOptions.replaceChildren(...options);
+  };
+
+  const loadFishers = async (query = '') => {
+    try {
+      const params = new URLSearchParams();
+      if (query.trim()) params.set('q', query.trim());
+      const response = await apiRequest(`/api/community/fishers?${params}`);
+      if (!response.data.length) {
+        showEmpty(fisherResults, query ? 'Nenhum pescador encontrado com esse nome.' : 'Ainda não há outros pescadores cadastrados.');
+        return;
+      }
+      const results = response.data.map((fisher) => {
+        const row = createElement('article', 'community-result');
+        const copy = createElement('div', 'community-result-copy');
+        copy.append(
+          createElement('strong', '', fisher.name),
+          createElement('span', '', `${fisher.catchesCount} captura${fisher.catchesCount === 1 ? '' : 's'}`)
+        );
+        const actions = createElement('div', 'community-actions');
+        const profileButton = createElement('button', 'community-action', 'Ver peixes');
+        profileButton.type = 'button';
+        profileButton.addEventListener('click', () => loadFisherProfile(fisher.id));
+        const chatButton = createElement('button', 'community-action', 'Chat');
+        chatButton.type = 'button';
+        chatButton.addEventListener('click', () => searchChatByName(fisher.name));
+        actions.append(profileButton, chatButton);
+        row.append(copy, actions);
+        return row;
+      });
+      fisherResults.replaceChildren(...results);
+    } catch (error) {
+      showEmpty(fisherResults, error.message);
+      setStatus(groupFormStatus, error.message, 'error');
+    }
+  };
+
+  const loadChatFishers = async (query = '', populateGroups = false) => {
+    try {
+      const fishers = await window.FisgaSupabaseChat.searchSupabaseFishers(query);
+      const otherFishers = fishers.filter((fisher) => fisher.id !== currentSupabaseUser?.id);
+      if (populateGroups) {
+        const groupFishers = query
+          ? await window.FisgaSupabaseChat.searchSupabaseFishers()
+          : otherFishers;
+        populateGroupMembers(groupFishers.filter((fisher) => fisher.id !== currentSupabaseUser?.id));
+        groupFishersLoaded = true;
+      }
+      if (!otherFishers.length) {
+        showEmpty(chatFisherResults, query ? 'Nenhum pescador encontrado com esse nome.' : 'Ainda não há outros pescadores cadastrados.');
+        return;
+      }
+      const results = otherFishers.map((fisher) => {
+        const row = createElement('article', 'community-result chat-fisher-result');
+        const copy = createElement('div', 'community-result-copy');
+        copy.append(createElement('strong', '', fisher.nome_usuario));
+        const actions = createElement('div', 'community-actions');
+        const friendship = currentFriendships.find((item) => item.userId === fisher.id);
+        const friendButton = createElement(
+          'button',
+          'community-action',
+          friendship
+            ? friendship.status === 'aceita'
+              ? 'Amigos'
+              : friendship.direction === 'received'
+                ? 'Aceitar'
+                : 'Solicitado'
+            : 'Adicionar amigo'
+        );
+        friendButton.type = 'button';
+        if (friendship?.status === 'aceita' || (friendship?.status === 'pendente' && friendship.direction === 'sent')) {
+          friendButton.disabled = true;
+        } else {
+          friendButton.addEventListener('click', () => changeFriendship(
+            fisher.id,
+            friendship?.direction === 'received' ? 'accept' : 'request'
+          ));
+        }
+        const chatButton = createElement('button', 'community-action', 'Conversar');
+        chatButton.type = 'button';
+        chatButton.addEventListener('click', () => startDirectConversation({
+          id: fisher.id,
+          name: fisher.nome_usuario
+        }));
+        actions.append(friendButton, chatButton);
+        row.append(copy, actions);
+        return row;
+      });
+      chatFisherResults.replaceChildren(...results);
+    } catch (error) {
+      showEmpty(chatFisherResults, error.message);
+    }
+  };
+
+  const loadLeaderboard = async () => {
+    const params = new URLSearchParams();
+    const values = {
+      q: document.getElementById('leaderboardSearch')?.value,
+      minWeight: document.getElementById('leaderboardMinWeight')?.value,
+      maxWeight: document.getElementById('leaderboardMaxWeight')?.value,
+      minLength: document.getElementById('leaderboardMinLength')?.value,
+      maxLength: document.getElementById('leaderboardMaxLength')?.value
+    };
+    Object.entries(values).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+    try {
+      const response = await apiRequest(`/api/community/leaderboard?${params}`);
+      if (!response.data.length) {
+        showEmpty(leaderboardResults, 'Nenhuma captura corresponde aos filtros. Registre uma captura para iniciar o ranking.');
+        return;
+      }
+      const rows = response.data.map((record, index) => {
+        const row = createElement('article', 'leaderboard-result');
+        const copy = createElement('div', 'leaderboard-result-copy');
+        copy.append(
+          createElement('strong', '', `${index + 1}. ${record.species} • ${record.weight} kg • ${record.length} cm`),
+          createElement('span', '', `${record.fisher?.name || 'Pescador'}${record.location ? ` • ${record.location}` : ''}`)
+        );
+        row.append(copy);
+        return row;
+      });
+      leaderboardResults.replaceChildren(...rows);
+    } catch (error) {
+      showEmpty(leaderboardResults, error.message);
+    }
+  };
+
+  const loadConversations = async (selectedId = activeConversationId) => {
+    const conversations = await window.FisgaSupabaseChat.listSupabaseRooms();
+    if (!conversations.length) {
+      if (closeActiveRoom) {
+        await closeActiveRoom();
+        closeActiveRoom = null;
+      }
+      activeConversationId = null;
+      showEmpty(conversationList, 'Suas conversas aparecerão aqui.');
+      chatMessages.replaceChildren();
+      chatEmptyState.hidden = false;
+      chatActive.hidden = true;
+      return;
+    }
+    const items = conversations.map((conversation) => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = `conversation-item${conversation.id === selectedId ? ' active' : ''}`;
+      const otherMembers = conversation.members
+        .filter((member) => member.id !== currentSupabaseUser.id)
+        .map((member) => member.name);
+      const title = conversation.type === 'group' ? conversation.name : (otherMembers[0] || 'Conversa');
+      item.append(
+        createElement('strong', '', title),
+        createElement('span', '', conversation.latestMessage?.conteudo || `${conversation.members.length} participante${conversation.members.length === 1 ? '' : 's'}`)
+      );
+      item.addEventListener('click', () => loadConversations(conversation.id)
+        .catch((error) => setStatus(document.getElementById('chatStatus'), error.message, 'error')));
+      return item;
+    });
+    conversationList.replaceChildren(...items);
+
+    const previousRoomId = activeConversationId;
+    const selected = conversations.find((conversation) => conversation.id === selectedId) || conversations[0];
+    const selectedItem = items[conversations.indexOf(selected)];
+    selectedItem.classList.add('active');
+    const otherMembers = selected.members.filter((member) => member.id !== currentSupabaseUser.id);
+    document.getElementById('chatConversationTitle').textContent = selected.type === 'group'
+      ? selected.name
+      : (otherMembers[0]?.name || 'Conversa');
+    document.getElementById('chatConversationMembers').textContent = selected.type === 'group'
+      ? `${selected.members.length} participantes`
+      : 'Conversa privada';
+    chatEmptyState.hidden = true;
+    chatActive.hidden = false;
+    if (selected.id !== previousRoomId || !closeActiveRoom) {
+      if (closeActiveRoom) {
+        await closeActiveRoom();
+        closeActiveRoom = null;
+      }
+      activeConversationId = selected.id;
+      setStatus(document.getElementById('chatStatus'), '');
+      try {
+        closeActiveRoom = await window.FisgaSupabaseChat.openRoomChat(selected.id, chatMessages);
+      } catch (error) {
+        activeConversationId = null;
+        closeActiveRoom = null;
+        setStatus(document.getElementById('chatStatus'), error.message, 'error');
+        throw error;
+      }
+    }
+  };
+
+  const initializeApp = async () => {
+    try {
+      const supabaseAuth = window.FisgaSupabaseChat;
+      if (!supabaseAuth) throw new Error('O módulo Supabase não carregou. Verifique a conexão e a configuração.');
+      currentSupabaseUser = await supabaseAuth.getSupabaseUser();
+      if (!currentSupabaseUser) {
+        window.location.replace('/login/login.html');
+        return;
+      }
+      const response = await apiRequest('/api/community/me');
+      currentUser = response.user;
+      const profileName = document.querySelector('.perfil-nome');
+      if (profileName) profileName.textContent = currentUser.name;
+      const greeting = document.querySelector('.texto-ola');
+      if (greeting) greeting.textContent = `Olá, ${currentUser.name}!`;
+      await loadFriendships();
+      await Promise.all([loadMyCatches(), loadFishers(), loadChatFishers('', true), loadLeaderboard(), loadConversations()]);
+    } catch (error) {
+      if (error.status === 401) {
+        window.location.replace('/login/login.html');
+        return;
+      }
+      showEmpty(fisherResults, error.message);
+      showEmpty(leaderboardResults, error.message);
+      showEmpty(conversationList, error.message);
+      setStatus(document.getElementById('chatStatus'), error.message, 'error');
+      setStatus(friendshipStatus, error.message, 'error');
+    }
+  };
+
+  if (fisherSearch) {
+    fisherSearch.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => loadFishers(fisherSearch.value), 250);
+    });
+  }
+
+  if (chatFisherSearch) {
+    chatFisherSearch.addEventListener('input', () => {
+      clearTimeout(chatSearchTimer);
+      chatSearchTimer = setTimeout(() => loadChatFishers(chatFisherSearch.value), 250);
+    });
+  }
+
+  ['leaderboardSearch', 'leaderboardMinWeight', 'leaderboardMaxWeight', 'leaderboardMinLength', 'leaderboardMaxLength']
+    .forEach((id) => {
+      document.getElementById(id)?.addEventListener('input', () => {
+        clearTimeout(rankingTimer);
+        rankingTimer = setTimeout(loadLeaderboard, 250);
+      });
+    });
+
+  document.getElementById('newGroupToggle')?.addEventListener('click', () => {
+    newGroupForm.hidden = !newGroupForm.hidden;
+    if (!newGroupForm.hidden && !groupFishersLoaded) loadChatFishers('', true);
+  });
+
+  newGroupForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    setStatus(groupFormStatus, '');
+    const memberIds = [...newGroupForm.querySelectorAll('input[name="memberIds"]:checked')].map((input) => input.value);
+    try {
+      const roomId = await window.FisgaSupabaseChat.createGroupRoom(
+        document.getElementById('groupName').value,
+        memberIds
+      );
+      newGroupForm.reset();
+      newGroupForm.hidden = true;
+      setStatus(groupFormStatus, 'Grupo criado.', 'success');
+      await loadConversations(roomId);
+    } catch (error) {
+      setStatus(groupFormStatus, error.message, 'error');
+    }
+  });
+
+  window.FisgaSupabaseChat.bindRoomMessageForm({
+    form: chatMessageForm,
+    input: document.getElementById('chatMessageInput'),
+    getRoomId: () => activeConversationId,
+    statusElement: document.getElementById('chatStatus')
+  });
+
+  if (catchDialog && catchForm) {
+    const openCatchDialog = () => {
+      setStatus(catchFormStatus, '');
+      catchDialog.showModal();
+    };
+    ['btnNovaCaptura', 'btnRegistrarFisgaCapturas', 'cardNovaCaptura'].forEach((id) => {
+      document.getElementById(id)?.addEventListener('click', openCatchDialog);
+    });
+    document.getElementById('closeCatchDialog')?.addEventListener('click', () => catchDialog.close());
+    document.getElementById('profileNewCatch')?.addEventListener('click', openCatchDialog);
+    catchForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const formData = new FormData(catchForm);
+      const photo = formData.get('photo');
+      let imagePath = null;
+      try {
+        if (photo instanceof File && photo.name) {
+          imagePath = await window.FisgaSupabaseChat.uploadCatchPhoto(photo);
+        }
+        try {
+          await apiRequest('/api/community/catches', {
+            method: 'POST',
+            body: JSON.stringify({
+              species: formData.get('species'),
+              weight: Number(formData.get('weight')),
+              length: Number(formData.get('length')),
+              location: formData.get('location'),
+              imagePath
+            })
+          });
+        } catch (error) {
+          if (imagePath) {
+            try {
+              await window.FisgaSupabaseChat.removeCatchPhoto(imagePath);
+            } catch (cleanupError) {
+              throw new Error(`${error.message} Não foi possível remover a foto enviada; tente novamente mais tarde.`);
+            }
+          }
+          throw error;
+        }
+        catchForm.reset();
+        catchDialog.close();
+        await Promise.all([loadMyCatches(), loadLeaderboard()]);
+      } catch (error) {
+        setStatus(catchFormStatus, error.message, 'error');
+      }
+    });
+  }
+
+  document.getElementById('logoutButton')?.addEventListener('click', async () => {
+    try {
+      const results = await Promise.allSettled([
+        window.FisgaSupabaseChat.signOutFromSupabase(),
+        apiRequest('/api/auth/logout', { method: 'POST' })
+      ]);
+      const failure = results.find((result) => result.status === 'rejected');
+      if (failure) throw failure.reason;
+      window.location.assign('/login/login.html');
+    } catch (error) {
+      window.alert(error.message);
+    }
+  });
+
+  window.setInterval(async () => {
+    if (document.hidden || !currentSupabaseUser || chatRefreshInProgress) return;
+    chatRefreshInProgress = true;
+    try {
+      await loadConversations(activeConversationId);
+    } catch (error) {
+      if (chatMessages) {
+        setStatus(document.getElementById('chatStatus'), `Não foi possível atualizar o chat: ${error.message}`, 'error');
+      }
+    } finally {
+      chatRefreshInProgress = false;
+    }
+  }, 5000);
+
+  initializeApp();
 });

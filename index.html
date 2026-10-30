@@ -664,7 +664,7 @@
           </div>
 
           <!-- Grade de capturas -->
-          <div class="grade-capturas">
+          <div class="grade-capturas" id="userCatchList">
             <div class="card-captura destaque">
               <img class="captura-img" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCbbjiBz7Q0kqiZQxzsm3cc73yDnfb8BOAKDv-hCkuVb-fhi57AvJTq-b9W03GEAem-ab45K6CNW5UBOlsIHaZNYp6FbXUs68lSwv91E2z0NGSmfHJFQTaODiXxSBfFW2hUCyNj21y0hmCQfbV-K9IgzeXskiXMLjfOgfw8bdyfaF5QHmwoHVnTmsoVbQumhRf60ent1DlGXJLB-SxZ6I-cFpMvm-_mZKCkC2C6tOGxqJdlgxFYXBWMdg" alt="Robalo Flecha">
               <div class="captura-overlay">
@@ -779,55 +779,26 @@
             </div>
           </div>
 
-          <!-- Conquistas -->
+          <section class="social-section profile-catches-section" aria-labelledby="profileCatchTitle">
+            <div class="social-section-heading">
+              <div>
+                <h3 id="profileCatchTitle">Minhas capturas</h3>
+                <p>Fotos e registros dos peixes que você pescou.</p>
+              </div>
+              <button class="community-action" id="profileNewCatch" type="button">
+                <span class="material-symbols-outlined" aria-hidden="true">add_a_photo</span>
+                Registrar
+              </button>
+            </div>
+            <div id="profileCatchList" class="grade-capturas profile-catch-grid" aria-live="polite"></div>
+          </section>
+
           <div class="cabecalho-secao" style="padding:0;margin-bottom:0.75rem">
             <div class="titulo-com-icone">
               <span class="material-symbols-outlined text-cyan-700 text-[20px]">military_tech</span>
-              <span class="texto-titulo-secao">Conquistas</span>
+              <span class="texto-titulo-secao">Suas conquistas</span>
             </div>
-            <button class="botao-link">Ver todas</button>
-          </div>
-          <div class="conquistas-lista">
-            <div class="conquista-item conquistado">
-              <div class="conquista-icone">
-                <span class="material-symbols-outlined text-[22px]">emoji_events</span>
-              </div>
-              <div class="conquista-info">
-                <strong>Primeira Fisga</strong>
-                <span>Registrou sua 1&ordf; captura em Recife</span>
-              </div>
-              <span class="material-symbols-outlined text-green-500 text-[20px]">check_circle</span>
-            </div>
-            <div class="conquista-item conquistado">
-              <div class="conquista-icone amarelo">
-                <span class="material-symbols-outlined text-[22px]">workspace_premium</span>
-              </div>
-              <div class="conquista-info">
-                <strong>Rei do Estuário</strong>
-                <span>Capturou Robalo acima de 5 kg no Capibaribe</span>
-              </div>
-              <span class="material-symbols-outlined text-green-500 text-[20px]">check_circle</span>
-            </div>
-            <div class="conquista-item">
-              <div class="conquista-icone cinza">
-                <span class="material-symbols-outlined text-[22px]">waves</span>
-              </div>
-              <div class="conquista-info">
-                <strong>Mestre do Recife</strong>
-                <span>10 capturas nos recifes de coral de PE</span>
-              </div>
-              <span class="conquista-progresso">4/10</span>
-            </div>
-            <div class="conquista-item">
-              <div class="conquista-icone cinza">
-                <span class="material-symbols-outlined text-[22px]">anchor</span>
-              </div>
-              <div class="conquista-info">
-                <strong>Explorador do Litoral</strong>
-                <span>Pescou em 5 praias diferentes de Pernambuco</span>
-              </div>
-              <span class="conquista-progresso">2/5</span>
-            </div>
+            <button class="botao-link" id="viewAllAchievements" type="button">Ver todas</button>
           </div>
 
           <!-- Configurações -->
@@ -858,7 +829,7 @@
               <span class="config-label">Ajuda & Suporte</span>
               <span class="material-symbols-outlined text-[18px] text-slate-400">chevron_right</span>
             </button>
-            <button class="config-item config-item-sair">
+            <button class="config-item config-item-sair" id="logoutButton" type="button">
               <span class="material-symbols-outlined text-[20px] text-red-400">logout</span>
               <span class="config-label config-sair">Sair da conta</span>
               <span class="material-symbols-outlined text-[18px] text-slate-400">chevron_right</span>
@@ -867,6 +838,214 @@
         </section>
       </div>
     </div>
+
+    <!-- ===== PAINEL: CONQUISTAS ===== -->
+    <div class="painel-tab" id="painel-conquistas" hidden>
+      <div class="container-conteudo">
+        <section class="secao-painel">
+          <div class="painel-header">
+            <div class="painel-header-icon bg-yellow-100 text-yellow-700">
+              <span class="material-symbols-outlined text-[22px]">military_tech</span>
+            </div>
+            <div>
+              <h2 class="painel-titulo">Conquistas da comunidade</h2>
+              <p class="painel-subtitulo">Encontre pescadores e acompanhe os maiores peixes</p>
+            </div>
+          </div>
+          <section class="social-section" aria-labelledby="myAchievementsTitle">
+            <div class="social-section-heading">
+              <div>
+                <h3 id="myAchievementsTitle">Minhas conquistas</h3>
+                <p>Seu progresso e seus marcos na pesca.</p>
+              </div>
+              <span class="material-symbols-outlined" aria-hidden="true">emoji_events</span>
+            </div>
+            <div class="conquistas-lista">
+              <div class="conquista-item conquistado">
+                <div class="conquista-icone">
+                  <span class="material-symbols-outlined text-[22px]">emoji_events</span>
+                </div>
+                <div class="conquista-info">
+                  <strong>Primeira Fisga</strong>
+                  <span>Registrou sua 1&ordf; captura em Recife</span>
+                </div>
+                <span class="material-symbols-outlined text-green-500 text-[20px]">check_circle</span>
+              </div>
+              <div class="conquista-item conquistado">
+                <div class="conquista-icone amarelo">
+                  <span class="material-symbols-outlined text-[22px]">workspace_premium</span>
+                </div>
+                <div class="conquista-info">
+                  <strong>Rei do Estuário</strong>
+                  <span>Capturou Robalo acima de 5 kg no Capibaribe</span>
+                </div>
+                <span class="material-symbols-outlined text-green-500 text-[20px]">check_circle</span>
+              </div>
+              <div class="conquista-item">
+                <div class="conquista-icone cinza">
+                  <span class="material-symbols-outlined text-[22px]">waves</span>
+                </div>
+                <div class="conquista-info">
+                  <strong>Mestre do Recife</strong>
+                  <span>10 capturas nos recifes de coral de PE</span>
+                </div>
+                <span class="conquista-progresso">4/10</span>
+              </div>
+              <div class="conquista-item">
+                <div class="conquista-icone cinza">
+                  <span class="material-symbols-outlined text-[22px]">anchor</span>
+                </div>
+                <div class="conquista-info">
+                  <strong>Explorador do Litoral</strong>
+                  <span>Pescou em 5 praias diferentes de Pernambuco</span>
+                </div>
+                <span class="conquista-progresso">2/5</span>
+              </div>
+            </div>
+          </section>
+          <section class="social-section" aria-labelledby="fishersTitle">
+            <div class="social-section-heading">
+              <div>
+                <h3 id="fishersTitle">Buscar pescadores</h3>
+                <p>Veja os peixes que cada pescador já registrou.</p>
+              </div>
+              <span class="material-symbols-outlined" aria-hidden="true">groups</span>
+            </div>
+            <label class="community-search">
+              <span class="material-symbols-outlined" aria-hidden="true">search</span>
+              <input id="fisherSearch" type="search" placeholder="Buscar pescador pelo nome" autocomplete="off">
+            </label>
+            <div id="fisherResults" class="community-results" aria-live="polite"></div>
+            <div id="fisherProfile" class="fisher-profile" hidden></div>
+          </section>
+
+          <section class="social-section" aria-labelledby="leaderboardTitle">
+            <div class="social-section-heading">
+              <div>
+                <h3 id="leaderboardTitle">Top do ranking</h3>
+                <p>Maiores peixes registrados pela comunidade.</p>
+              </div>
+              <span class="material-symbols-outlined" aria-hidden="true">leaderboard</span>
+            </div>
+            <div class="leaderboard-filters">
+              <label>Espécie
+                <input id="leaderboardSearch" type="search" placeholder="Ex.: Robalo" autocomplete="off">
+              </label>
+              <label>Peso mín. (kg)
+                <input id="leaderboardMinWeight" type="number" min="0" step="0.1" placeholder="0">
+              </label>
+              <label>Peso máx. (kg)
+                <input id="leaderboardMaxWeight" type="number" min="0" step="0.1" placeholder="Sem limite">
+              </label>
+              <label>Tamanho mín. (cm)
+                <input id="leaderboardMinLength" type="number" min="0" step="1" placeholder="0">
+              </label>
+              <label>Tamanho máx. (cm)
+                <input id="leaderboardMaxLength" type="number" min="0" step="1" placeholder="Sem limite">
+              </label>
+            </div>
+            <div id="leaderboardResults" class="community-results" aria-live="polite"></div>
+          </section>
+        </section>
+      </div>
+    </div>
+
+    <!-- ===== PAINEL: CHAT ===== -->
+    <div class="painel-tab" id="painel-chat" hidden>
+      <div class="container-conteudo">
+        <section class="secao-painel">
+          <div class="painel-header">
+            <div class="painel-header-icon bg-cyan-100 text-cyan-700">
+              <span class="material-symbols-outlined text-[22px]">forum</span>
+            </div>
+            <div>
+              <h2 class="painel-titulo">Chat da comunidade</h2>
+              <p class="painel-subtitulo">Converse com pescadores e crie grupos</p>
+            </div>
+          </div>
+          <div class="chat-layout">
+            <section class="chat-sidebar" aria-label="Conversas">
+              <section class="chat-fisher-search" aria-labelledby="chatFisherSearchTitle">
+                <h3 id="chatFisherSearchTitle">Encontrar pescador</h3>
+                <label class="community-search">
+                  <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                  <input id="chatFisherSearch" type="search" placeholder="Buscar pelo nome" autocomplete="off">
+                </label>
+                <div id="chatFisherResults" class="community-results" aria-live="polite"></div>
+                <section class="friendships-section" aria-labelledby="friendshipsTitle">
+                  <h3 id="friendshipsTitle">Amigos e solicitações</h3>
+                  <div id="friendshipResults" class="community-results" aria-live="polite"></div>
+                  <p id="friendshipStatus" class="community-status" role="status" aria-live="polite"></p>
+                </section>
+              </section>
+              <div class="chat-sidebar-heading">
+                <h3>Conversas</h3>
+                <button class="community-action" id="newGroupToggle" type="button">
+                  <span class="material-symbols-outlined" aria-hidden="true">group_add</span>
+                  Criar grupo
+                </button>
+              </div>
+              <form id="newGroupForm" class="new-group-form" hidden>
+                <label for="groupName">Nome do grupo</label>
+                <input id="groupName" type="text" maxlength="50" placeholder="Ex.: Pesca no Capibaribe" required>
+                <p>Escolha os participantes:</p>
+                <div id="groupMemberOptions" class="group-member-options"></div>
+                <button class="community-primary" type="submit">Criar grupo</button>
+                <p id="groupFormStatus" class="community-status" aria-live="polite"></p>
+              </form>
+              <div id="conversationList" class="conversation-list" aria-live="polite"></div>
+            </section>
+            <section class="chat-conversation" aria-label="Mensagens da conversa">
+              <div id="chatEmptyState" class="chat-empty-state">
+                <span class="material-symbols-outlined" aria-hidden="true">chat_bubble_outline</span>
+                <p>Escolha uma conversa ou busque um pescador pelo nome.</p>
+              </div>
+              <div id="chatActive" class="chat-active" hidden>
+                <header class="chat-active-header">
+                  <div>
+                    <h3 id="chatConversationTitle"></h3>
+                    <p id="chatConversationMembers"></p>
+                  </div>
+                </header>
+                <div id="chatMessages" class="chat-messages" aria-live="polite"></div>
+                <form id="chatMessageForm" class="chat-message-form">
+                  <label class="sr-only" for="chatMessageInput">Escreva sua mensagem</label>
+                  <input id="chatMessageInput" type="text" maxlength="1000" placeholder="Escreva uma mensagem..." autocomplete="off" required>
+                  <button type="submit" aria-label="Enviar mensagem">
+                    <span class="material-symbols-outlined" aria-hidden="true">send</span>
+                  </button>
+                </form>
+                <p id="chatStatus" class="community-status" role="status" aria-live="polite"></p>
+              </div>
+            </section>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <dialog class="catch-dialog" id="catchDialog">
+      <form id="catchForm" class="catch-form">
+        <div class="social-section-heading">
+          <div>
+            <h2>Registrar captura</h2>
+            <p>Compartilhe seu peixe com a comunidade.</p>
+          </div>
+          <button id="closeCatchDialog" class="dialog-close" type="button" aria-label="Fechar">×</button>
+        </div>
+        <label>Espécie<input name="species" maxlength="60" required placeholder="Ex.: Robalo"></label>
+        <label>Foto do peixe (opcional)
+          <input name="photo" type="file" accept="image/jpeg,image/png,image/webp">
+          <span class="catch-photo-help">JPG, PNG ou WebP; até 5 MB.</span>
+        </label>
+        <div class="catch-measure-fields">
+          <label>Peso (kg)<input name="weight" type="number" min="0.01" max="500" step="0.01" required></label>
+          <label>Tamanho (cm)<input name="length" type="number" min="0.1" max="1000" step="0.1" required></label>
+        </div>
+        <label>Local (opcional)<input name="location" maxlength="80" placeholder="Ex.: Recife, PE"></label>
+        <p id="catchFormStatus" class="community-status" aria-live="polite"></p>
+        <button class="community-primary" type="submit">Salvar captura</button>
+      </form>
+    </dialog>
   </main>
 
   <nav class="menu-navegacao-inferior" aria-label="Navegação principal">
@@ -879,9 +1058,13 @@
         <span class="material-symbols-outlined text-[22px]" aria-hidden="true">map</span>
         <span class="rotulo-menu">Locais</span>
       </button>
-      <button class="item-menu" id="tab-capturas" data-tab="capturas" type="button">
-        <span class="material-symbols-outlined text-[22px]" aria-hidden="true">emoji_events</span>
-        <span class="rotulo-menu">Capturas</span>
+      <button class="item-menu" id="tab-conquistas" data-tab="conquistas" type="button">
+        <span class="material-symbols-outlined text-[22px]" aria-hidden="true">military_tech</span>
+        <span class="rotulo-menu">Conquistas</span>
+      </button>
+      <button class="item-menu" id="tab-chat" data-tab="chat" type="button">
+        <span class="material-symbols-outlined text-[22px]" aria-hidden="true">forum</span>
+        <span class="rotulo-menu">Chat</span>
       </button>
       <button class="item-menu" id="tab-perfil" data-tab="perfil" type="button">
         <span class="material-symbols-outlined text-[22px]" aria-hidden="true">person</span>
@@ -890,5 +1073,7 @@
     </div>
   </nav>
   </div>
+  <script src="supabase-config.js"></script>
+  <script type="module" src="supabase-chat.js"></script>
 </body>
 </html>

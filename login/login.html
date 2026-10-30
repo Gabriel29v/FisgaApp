@@ -39,13 +39,20 @@
 
       <form id="loginForm">
         <div class="form-group">
-          <label for="email">E-mail ou Usuário</label>
+          <label for="email">E-mail</label>
           <div class="input-wrapper">
             <svg class="input-icon" viewBox="0 0 24 24" aria-hidden="true">
               <rect x="3" y="5" width="18" height="14" rx="2"></rect>
               <path d="m4 7 8 6 8-6"></path>
             </svg>
-            <input type="text" id="email" name="email" autocomplete="username" placeholder="pescador@exemplo.com.br" required>
+            <input type="email" id="email" name="email" autocomplete="username" placeholder="pescador@exemplo.com.br" required>
+          </div>
+        </div>
+
+        <div class="form-group" id="displayNameGroup" hidden>
+          <label for="displayName">Nome de pescador</label>
+          <div class="input-wrapper">
+            <input type="text" id="displayName" name="displayName" autocomplete="name" minlength="2" maxlength="40" placeholder="Como a comunidade vai encontrar você" disabled>
           </div>
         </div>
 
@@ -90,6 +97,7 @@
         <button type="submit" class="btn-submit">
           Entrar no Fisga <span aria-hidden="true">→</span>
         </button>
+        <p id="loginStatus" class="login-status" role="status" aria-live="polite"></p>
       </form>
 
       <div class="divider">
@@ -121,5 +129,7 @@
   </div>
 
   <script src="../script.js"></script>
+  <script src="../supabase-config.js"></script>
+  <script type="module" src="../supabase-chat.js"></script>
 </body>
 </html>

@@ -2,11 +2,14 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const { URL } = require('node:url');
+const { createCommunityStore } = require('./community');
 
 const API_BASE_URL = 'https://tabuamare.api.br';
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const ROOT = __dirname;
+const community = createCommunityStore(process.env.FISGA_DATA_FILE || path.join(ROOT, '.data', 'community.json'));
+const SESSION_COOKIE = 'fisga_session';
 
 const locations = [
   { id: 'recife', name: 'Recife', latitude: -8.0476, longitude: -34.877, utcOffset: -3 },
@@ -178,7 +181,139 @@ function sendJson(response, status, body) {
   response.end(JSON.stringify(body));
 }
 
-async function handleApiRequest(request, response, url) {
+function getSessionToken(request) {
+  const cookies = (request.headers.cookie || '').split(';');
+  const sessionCookie = cookies.map((cookie) => cookie.trim()).find((cookie) => cookie.startsWith(`${SESSION_COOKIE}=`));
+  const token = sessionCookie ? sessionCookie.slice(SESSION_COOKIE.length + 1) : '';
+  return /^[A-Za-z0-9_-]{43}$/.test(token) ? token : '';
+}
+
+function setSessionCookie(request, response, token) {
+  const secure = request.socket.encrypted || request.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '';
+  response.setHeader('Set-Cookie', `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000${secure}`);
+}
+
+function clearSessionCookie(request, response) {
+  const secure = request.socket.encrypted || request.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '';
+  response.setHeader('Set-Cookie', `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`);
+}
+
+async function readJsonBody(request) {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of request) {
+    size += chunk.length;
+    if (size > 16 * 1024) {
+      throw Object.assign(new Error('A solicitação excede o tamanho permitido.'), { status: 413 });
+    }
+    chunks.push(chunk);
+  }
+  try {
+    const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    if (!body || Array.isArray(body) || typeof body !== 'object') throw new Error('invalid body');
+    return body;
+  } catch {
+    throw Object.assign(new Error('Envie um corpo JSON válido.'), { status: 400 });
+  }
+}
+
+async function handleCommunityRequest(request, response, url, store) {
+  const { pathname, searchParams } = url;
+  if (request.method === 'POST' && (pathname === '/api/auth/register' || pathname === '/api/auth/login')) {
+    const body = await readJsonBody(request);
+    if (pathname === '/api/auth/register') {
+      const user = await store.register(body);
+      const session = await store.authenticate({ email: body.email, password: body.password });
+      setSessionCookie(request, response, session.token);
+      sendJson(response, 201, { user });
+      return;
+    }
+    const session = await store.authenticate(body);
+    setSessionCookie(request, response, session.token);
+    sendJson(response, 200, { user: session.user });
+    return;
+  }
+
+  if (pathname === '/api/auth/logout' && request.method === 'POST') {
+    await store.revokeToken(getSessionToken(request));
+    clearSessionCookie(request, response);
+    sendJson(response, 200, { ok: true });
+    return;
+  }
+
+  const user = await store.getUserForToken(getSessionToken(request));
+  if (!user) {
+    sendJson(response, 401, { error: 'Entre na sua conta para acessar a comunidade.' });
+    return;
+  }
+
+  if (pathname === '/api/community/me' && request.method === 'GET') {
+    sendJson(response, 200, { user });
+    return;
+  }
+  if (pathname === '/api/community/fishers' && request.method === 'GET') {
+    sendJson(response, 200, { data: await store.searchFishers(user.id, searchParams.get('q')) });
+    return;
+  }
+  if (pathname === '/api/community/catches' && request.method === 'GET') {
+    sendJson(response, 200, { data: await store.listCatches(user.id) });
+    return;
+  }
+  if (pathname === '/api/community/catches' && request.method === 'POST') {
+    sendJson(response, 201, { data: await store.addCatch(user.id, await readJsonBody(request)) });
+    return;
+  }
+  if (pathname === '/api/community/leaderboard' && request.method === 'GET') {
+    sendJson(response, 200, {
+      data: await store.getLeaderboard({
+        q: searchParams.get('q'),
+        minWeight: searchParams.get('minWeight'),
+        maxWeight: searchParams.get('maxWeight'),
+        minLength: searchParams.get('minLength'),
+        maxLength: searchParams.get('maxLength')
+      })
+    });
+    return;
+  }
+
+  const fisherCatchesMatch = pathname.match(/^\/api\/community\/fishers\/([^/]+)\/catches$/);
+  if (fisherCatchesMatch && request.method === 'GET') {
+    const fisherId = decodeURIComponent(fisherCatchesMatch[1]);
+    sendJson(response, 200, await store.getFisherCatches(user.id, fisherId));
+    return;
+  }
+
+  if (pathname === '/api/community/conversations' && request.method === 'GET') {
+    sendJson(response, 200, { data: await store.listConversations(user.id) });
+    return;
+  }
+  if (pathname === '/api/community/conversations' && request.method === 'POST') {
+    const conversation = await store.createConversation(user.id, await readJsonBody(request));
+    sendJson(response, 201, { data: conversation });
+    return;
+  }
+
+  const messagesMatch = pathname.match(/^\/api\/community\/conversations\/([^/]+)\/messages$/);
+  if (messagesMatch) {
+    const conversationId = decodeURIComponent(messagesMatch[1]);
+    if (request.method === 'GET') {
+      sendJson(response, 200, { data: await store.listMessages(user.id, conversationId) });
+      return;
+    }
+    if (request.method === 'POST') {
+      sendJson(response, 201, { data: await store.addMessage(user.id, conversationId, (await readJsonBody(request)).text) });
+      return;
+    }
+  }
+
+  sendJson(response, 404, { error: 'Endpoint da comunidade não encontrado.' });
+}
+
+async function handleApiRequest(request, response, url, store = community) {
+  if (url.pathname.startsWith('/api/auth/') || url.pathname.startsWith('/api/community/')) {
+    await handleCommunityRequest(request, response, url, store);
+    return;
+  }
   if (request.method !== 'GET') {
     sendJson(response, 405, { error: 'Método não permitido.' });
     return;
@@ -282,12 +417,14 @@ function serveStaticFile(request, response, pathname) {
   });
 }
 
-function createServer() {
+function createServer(options = {}) {
+  const store = options.communityStore || community;
   return http.createServer((request, response) => {
     const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
     if (url.pathname.startsWith('/api/')) {
-      handleApiRequest(request, response, url).catch((error) => {
-        sendJson(response, 500, { error: `Erro interno ao consultar marés: ${error.message}` });
+      handleApiRequest(request, response, url, store).catch((error) => {
+        const status = Number.isInteger(error.status) ? error.status : 500;
+        sendJson(response, status, { error: status === 500 ? 'Erro interno ao processar a solicitação.' : error.message });
       });
       return;
     }
